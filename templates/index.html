@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Face Morph GIF Maker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="panel">
+        <h1>Face Morph GIF Maker</h1>
+        <p class="subtitle">
+          Upload ordered face images to generate a smooth animated GIF at the size you choose.
+        </p>
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <ul class="messages">
+              {% for message in messages %}
+                <li>{{ message }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+
+        <form
+          id="gif-form"
+          class="form"
+          action="{{ url_for('generate') }}"
+          method="post"
+          enctype="multipart/form-data"
+        >
+          <div class="field">
+            <label for="images">Face images (in order)</label>
+            <div id="drop-area" class="drop-area">
+              <p>Click to choose files or drag &amp; drop here</p>
+              <input
+                id="images"
+                type="file"
+                name="images"
+                multiple
+                accept="image/*"
+              />
+            </div>
+            <p class="hint">Use at least two images. They will be morphed in the order selected.</p>
+            <ul id="file-list" class="file-list"></ul>
+          </div>
+
+          {% if example_images %}
+          <div class="field">
+            <label>Or start with example faces</label>
+            <div class="example-grid">
+              {% for filename in example_images %}
+              <label class="example-tile">
+                <input
+                  type="checkbox"
+                  name="example_image"
+                  value="{{ filename }}"
+                />
+                <img
+                  src="{{ url_for('example_images', filename=filename) }}"
+                  alt="Example face {{ loop.index }}"
+                />
+              </label>
+              {% endfor %}
+            </div>
+            <p class="hint">
+              Selected examples are added after your own uploads, in the order shown.
+            </p>
+          </div>
+          {% endif %}
+
+          <div class="field grid">
+            <div>
+              <label for="fps">Frames per second</label>
+              <input
+                id="fps"
+                type="number"
+                name="fps"
+                min="1"
+                max="60"
+                value="{{ fps or 15 }}"
+              />
+              <p class="hint">Controls playback speed (default 15 fps).</p>
+            </div>
+            <div>
+              <label for="face_hold_seconds">Face hold (seconds per face)</label>
+              <input
+                id="face_hold_seconds"
+                type="number"
+                name="face_hold_seconds"
+                min="0"
+                max="5"
+                step="0.1"
+                value="{{ face_hold_seconds or 0.4 }}"
+              />
+              <p class="hint">
+                How long each face is shown clearly before morphing to the next.
+              </p>
+            </div>
+            <div>
+              <label for="duration_seconds">Loop duration (seconds)</label>
+              <input
+                id="duration_seconds"
+                type="number"
+                name="duration_seconds"
+                min="0.5"
+                max="30"
+                step="0.1"
+                value="{{ duration_seconds or '' }}"
+              />
+              <p class="hint">
+                How long one full loop of the GIF should last. Leave empty to use only FPS.
+              </p>
+            </div>
+            <div>
+              <label for="resolution">Output size</label>
+              <select id="resolution" name="resolution">
+                <option value="256" {% if resolution == 256 %}selected{% endif %}>
+                  256 × 256
+                </option>
+                <option value="360" {% if resolution is not defined or resolution == 360 %}selected{% endif %}>
+                  360 × 360 (default)
+                </option>
+                <option value="512" {% if resolution == 512 %}selected{% endif %}>
+                  512 × 512
+                </option>
+                <option value="720" {% if resolution == 720 %}selected{% endif %}>
+                  720 × 720
+                </option>
+              </select>
+              <p class="hint">Larger sizes look sharper but take longer and create bigger files.</p>
+            </div>
+          </div>
+
+          <div class="field checkbox-field">
+            <label>
+              <input
+                type="checkbox"
+                name="loop_back"
+                {% if loop_back is not defined or loop_back %}checked{% endif %}
+              />
+              Smoothly loop from last face back to first
+            </label>
+          </div>
+
+          <button type="submit" class="button primary">Create GIF</button>
+        </form>
+      </section>
+
+      <section class="panel result-panel">
+        <h2>Result</h2>
+        {% if gif_data %}
+          <div class="result">
+            <img
+              src="data:image/gif;base64,{{ gif_data }}"
+              alt="Generated face morph GIF"
+              class="result-image"
+            />
+            <a
+              class="button"
+              download="face-morph.gif"
+              href="data:image/gif;base64,{{ gif_data }}"
+            >
+              Download GIF
+            </a>
+          </div>
+        {% else %}
+          <p class="placeholder">
+            Your generated GIF will appear here after you create it.
+          </p>
+        {% endif %}
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+  </body>
+  </html>
+
